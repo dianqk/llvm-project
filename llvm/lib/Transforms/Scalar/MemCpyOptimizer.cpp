@@ -1690,12 +1690,18 @@ bool MemCpyOptPass::processImmutArgument(CallBase &CB, unsigned ArgNo) {
     return false;
 
   auto FnName = CB.getFunction()->getName();
-  if (FnName.contains("rustc_const_eval") &&
-      FnName.contains("CompileTimeInterpreter") &&
-      FnName.contains("float_to_float_or_int")) {
-    errs() << "LLVMLOG: Skip " << FnName << "\n";
+  bool IsKeyFunction = FnName.contains("rustc_const_eval") &&
+                       FnName.contains("CompileTimeInterpreter") &&
+                       FnName.contains("float_to_float_or_int");
+  if (!IsKeyFunction)
+    return false;
+  static int Count = 0;
+  Count += 1;
+  if (Count != 3) {
+    errs() << "LLVMLOG: Skip " << Count << "\n";
     return false;
   }
+  errs() << "LLVMLOG: Use " << Count << "\n";
 
   LLVM_DEBUG(dbgs() << "MemCpyOptPass: Forwarding memcpy to Immut src:\n"
                     << "  " << *MDep << "\n"
