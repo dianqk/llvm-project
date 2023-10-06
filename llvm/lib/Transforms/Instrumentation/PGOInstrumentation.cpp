@@ -2033,7 +2033,12 @@ static bool skipPGO(const Function &F) {
     return true;
   if (F.getInstructionCount() < PGOFunctionSizeThreshold)
     return true;
-
+  if (!F.getName().contains("rustc_const_eval"))
+    return true;
+  if (!F.getName().contains("float_to_float_or_int"))
+    return true;
+  if (!F.getName().contains("cast_from_float"))
+    return true;
   // If there are too many critical edges, PGO might cause
   // compiler time problem. Skip PGO if the number of
   // critical edges execeed the threshold.
