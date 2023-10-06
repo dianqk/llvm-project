@@ -1689,6 +1689,14 @@ bool MemCpyOptPass::processImmutArgument(CallBase &CB, unsigned ArgNo) {
   if (isModSet(AA->getModRefInfo(&CB, MemoryLocation::getForSource(MDep))))
     return false;
 
+  auto FnName = CB.getFunction()->getName();
+  if (FnName.contains("rustc_const_eval") &&
+      FnName.contains("CompileTimeInterpreter") &&
+      FnName.contains("float_to_float_or_int")) {
+    errs() << "LLVMLOG: Skip " << FnName << "\n";
+    return false;
+  }
+
   LLVM_DEBUG(dbgs() << "MemCpyOptPass: Forwarding memcpy to Immut src:\n"
                     << "  " << *MDep << "\n"
                     << "  " << CB << "\n");
