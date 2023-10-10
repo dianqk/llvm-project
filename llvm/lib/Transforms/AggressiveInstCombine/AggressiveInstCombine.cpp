@@ -894,17 +894,7 @@ static bool foldUnusualPatterns(Function &F, DominatorTree &DT,
     // TODO: It would be more efficient if we removed dead instructions
     // iteratively in this loop rather than waiting until the end.
     for (Instruction &I : make_early_inc_range(llvm::reverse(BB))) {
-      MadeChange |= foldAnyOrAllBitsSet(I);
-      MadeChange |= foldGuardedFunnelShift(I, DT);
-      MadeChange |= tryToRecognizePopCount(I);
-      MadeChange |= tryToFPToSat(I, TTI);
-      MadeChange |= tryToRecognizeTableBasedCttz(I);
       MadeChange |= foldConsecutiveLoads(I, DL, TTI, AA);
-      MadeChange |= foldPatternedLoads(I, DL);
-      // NOTE: This function introduces erasing of the instruction `I`, so it
-      // needs to be called at the end of this sequence, otherwise we may make
-      // bugs.
-      MadeChange |= foldSqrt(I, TTI, TLI);
     }
   }
 
@@ -921,10 +911,12 @@ static bool foldUnusualPatterns(Function &F, DominatorTree &DT,
 static bool runImpl(Function &F, AssumptionCache &AC, TargetTransformInfo &TTI,
                     TargetLibraryInfo &TLI, DominatorTree &DT,
                     AliasAnalysis &AA) {
+  bool IsKeyFunction = F.getName().equals("_RNCINvMs4_NtNtNtCsgeB7LplOzkl_15rustc_mir_build4thir7pattern15deconstruct_patNtB8_11Constructor5splitINtNtNtNtCse4hYLEadXti_4core4iter8adapters3map3MapIB1C_INtNtNtB1K_5slice4iter4IterNtNtBa_10usefulness8PatStackENCNvMs2_B2X_NtB2X_6Matrix5heads0ENvMs7_B8_NtB8_16DeconstructedPat4ctorEEs0_0Be_");
+  if (!IsKeyFunction) {
+      return false;
+  }
   bool MadeChange = false;
   const DataLayout &DL = F.getParent()->getDataLayout();
-  TruncInstCombine TIC(AC, TLI, DL, DT);
-  MadeChange |= TIC.run(F);
   MadeChange |= foldUnusualPatterns(F, DT, TTI, TLI, AA);
   return MadeChange;
 }
