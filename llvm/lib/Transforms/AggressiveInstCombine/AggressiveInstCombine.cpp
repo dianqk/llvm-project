@@ -911,7 +911,20 @@ static bool foldUnusualPatterns(Function &F, DominatorTree &DT,
 static bool runImpl(Function &F, AssumptionCache &AC, TargetTransformInfo &TTI,
                     TargetLibraryInfo &TLI, DominatorTree &DT,
                     AliasAnalysis &AA) {
-  bool IsKeyFunction = F.getName().equals("_RNCINvMs4_NtNtNtCsgeB7LplOzkl_15rustc_mir_build4thir7pattern15deconstruct_patNtB8_11Constructor5splitINtNtNtNtCse4hYLEadXti_4core4iter8adapters3map3MapIB1C_INtNtNtB1K_5slice4iter4IterNtNtBa_10usefulness8PatStackENCNvMs2_B2X_NtB2X_6Matrix5heads0ENvMs7_B8_NtB8_16DeconstructedPat4ctorEEs0_0Be_");
+  // if (F.getName().contains("rustc_mir_build") && F.getName().contains("core") &&
+  //     !F.getName().contains("Debug") && !F.getName().contains("rustc_middle") &&
+  //     !F.getName().contains("Span") && !F.getName().contains("drop") &&
+  //     F.getName().contains("slice") && !F.getName().contains("IntoIterator") &&
+  //     !F.getName().contains("mut") && !F.getName().contains("error") &&
+  //     F.getName().contains("hir") && F.getName().contains("Iter") &&
+  //     !F.getName().contains("next") && F.getName().contains("split") &&
+  //     !F.getName().contains("Flow") && !F.getName().contains("Filter") &&
+  //     !F.getName().contains("trait") && F.getName().contains("Constructor") &&
+  //     !F.getName().contains("call_once")) {
+  //   errs() << "LLVMLOG SKIP: " << F.getName() << "\n";
+  //   return false;
+  // }
+  bool IsKeyFunction = F.getName().equals("_RNCINvMs4_NtNtNtCs8zlSoIwVZ9h_15rustc_mir_build4thir7pattern15deconstruct_patNtB8_11Constructor5splitINtNtNtNtCse4hYLEadXti_4core4iter8adapters3map3MapIB1C_INtNtNtB1K_5slice4iter4IterNtNtBa_10usefulness8PatStackENCNvMs2_B2X_NtB2X_6Matrix5heads0ENvMs7_B8_NtB8_16DeconstructedPat4ctorEEs0_0Be_");
   if (!IsKeyFunction) {
       return false;
   }
