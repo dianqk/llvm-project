@@ -43,6 +43,7 @@
 #include "llvm/Transforms/Scalar.h"
 #include "llvm/Transforms/Utils/Local.h"
 #include <cassert>
+#include <llvm/Support/raw_ostream.h>
 #include <optional>
 #include <utility>
 
@@ -1070,6 +1071,7 @@ static bool processAnd(BinaryOperator *BinOp, LazyValueInfo *LVI) {
       LVI->getConstantRangeAtUse(LHS, /*UndefAllowed=*/false);
   if (!LRange.getUnsignedMax().ule(RHS->getValue()))
     return false;
+  errs() << "LLVMLOG: Delete " << *BinOp << "\n";
 
   BinOp->replaceAllUsesWith(LHS);
   BinOp->eraseFromParent();
