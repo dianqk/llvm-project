@@ -1103,6 +1103,8 @@ static Constant *getConstantAt(Value *V, Instruction *At, LazyValueInfo *LVI) {
 
 static bool runImpl(Function &F, LazyValueInfo *LVI, DominatorTree *DT,
                     const SimplifyQuery &SQ) {
+    if (F.getName() != "_RINvMs3_NtNtNtCs8zlSoIwVZ9h_15rustc_mir_build4thir7pattern15deconstruct_patNtB6_16SplitVarLenSlice5splitINtNtNtNtCse4hYLEadXti_4core4iter8adapters3map3MapINtNtB1J_10filter_map9FilterMapIB1F_IB1F_INtNtNtB1N_5slice4iter4IterNtNtB8_10usefulness8PatStackENCNvMs2_B3A_NtB3A_6Matrix5heads0ENvMs7_B6_NtB6_16DeconstructedPat4ctorENCINvMs4_B6_NtB6_11Constructor5splitB2X_Es_0ENCB5c_s0_0EEBc_")
+        return false;
   bool FnChanged = false;
   // Visiting in a pre-order depth-first traversal causes us to simplify early
   // blocks before querying later blocks (which require us to analyze early
@@ -1113,69 +1115,10 @@ static bool runImpl(Function &F, LazyValueInfo *LVI, DominatorTree *DT,
     bool BBChanged = false;
     for (Instruction &II : llvm::make_early_inc_range(*BB)) {
       switch (II.getOpcode()) {
-      case Instruction::Select:
-        BBChanged |= processSelect(cast<SelectInst>(&II), LVI);
-        break;
-      case Instruction::PHI:
-        BBChanged |= processPHI(cast<PHINode>(&II), LVI, DT, SQ);
-        break;
-      case Instruction::ICmp:
-      case Instruction::FCmp:
-        BBChanged |= processCmp(cast<CmpInst>(&II), LVI);
-        break;
-      case Instruction::Load:
-      case Instruction::Store:
-        BBChanged |= processMemAccess(&II, LVI);
-        break;
-      case Instruction::Call:
-      case Instruction::Invoke:
-        BBChanged |= processCallSite(cast<CallBase>(II), LVI);
-        break;
-      case Instruction::SRem:
-      case Instruction::SDiv:
-        BBChanged |= processSDivOrSRem(cast<BinaryOperator>(&II), LVI);
-        break;
-      case Instruction::UDiv:
-      case Instruction::URem:
-        BBChanged |= processUDivOrURem(cast<BinaryOperator>(&II), LVI);
-        break;
-      case Instruction::AShr:
-        BBChanged |= processAShr(cast<BinaryOperator>(&II), LVI);
-        break;
-      case Instruction::SExt:
-        BBChanged |= processSExt(cast<SExtInst>(&II), LVI);
-        break;
-      case Instruction::Add:
-      case Instruction::Sub:
-      case Instruction::Mul:
-      case Instruction::Shl:
-        BBChanged |= processBinOp(cast<BinaryOperator>(&II), LVI);
-        break;
       case Instruction::And:
         BBChanged |= processAnd(cast<BinaryOperator>(&II), LVI);
         break;
       }
-    }
-
-    Instruction *Term = BB->getTerminator();
-    switch (Term->getOpcode()) {
-    case Instruction::Switch:
-      BBChanged |= processSwitch(cast<SwitchInst>(Term), LVI, DT);
-      break;
-    case Instruction::Ret: {
-      auto *RI = cast<ReturnInst>(Term);
-      // Try to determine the return value if we can.  This is mainly here to
-      // simplify the writing of unit tests, but also helps to enable IPO by
-      // constant folding the return values of callees.
-      auto *RetVal = RI->getReturnValue();
-      if (!RetVal) break; // handle "ret void"
-      if (isa<Constant>(RetVal)) break; // nothing to do
-      if (auto *C = getConstantAt(RetVal, RI, LVI)) {
-        ++NumReturns;
-        RI->replaceUsesOfWith(RetVal, C);
-        BBChanged = true;
-      }
-    }
     }
 
     FnChanged |= BBChanged;
