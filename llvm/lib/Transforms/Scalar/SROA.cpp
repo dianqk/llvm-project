@@ -3401,7 +3401,7 @@ private:
             dyn_cast<AllocaInst>(OtherPtr->stripInBoundsOffsets())) {
       assert(AI != &OldAI && AI != &NewAI &&
              "Splittable transfers cannot reach the same alloca on both ends.");
-      Pass.Worklist.insert(AI);
+      // Pass.Worklist.insert(AI);
     }
 
     Type *OtherPtrTy = OtherPtr->getType();
