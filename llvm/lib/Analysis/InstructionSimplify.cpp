@@ -5249,15 +5249,13 @@ static Value *simplifyPHINode(PHINode *PN, ArrayRef<Value *> IncomingValues,
   // If all of the PHI's incoming values are the same then replace the PHI node
   // with the common value.
   Value *CommonValue = nullptr;
-  bool HasUndefInput = false;
   for (Value *Incoming : IncomingValues) {
     // If the incoming value is the phi node itself, it can safely be skipped.
     if (Incoming == PN)
       continue;
     if (Q.isUndefValue(Incoming)) {
       // Remember that we saw an undef value, but otherwise ignore them.
-      HasUndefInput = true;
-      continue;
+      return nullptr;
     }
     if (CommonValue && Incoming != CommonValue)
       return nullptr; // Not the same, bail out.
@@ -5268,13 +5266,6 @@ static Value *simplifyPHINode(PHINode *PN, ArrayRef<Value *> IncomingValues,
   // equal to the phi node itself.
   if (!CommonValue)
     return UndefValue::get(PN->getType());
-
-  if (HasUndefInput) {
-    // If we have a PHI node like phi(X, undef, X), where X is defined by some
-    // instruction, we cannot return X as the result of the PHI node unless it
-    // dominates the PHI block.
-    return valueDominatesPHI(CommonValue, PN, Q.DT) ? CommonValue : nullptr;
-  }
 
   return CommonValue;
 }
