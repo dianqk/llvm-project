@@ -294,6 +294,62 @@ bool TailDuplicator::tailDuplicateBlocks() {
     if (!shouldTailDuplicate(IsSimple, MBB))
       continue;
 
+    // Duplicating a BB which has both multiple predecessors and successors will
+    // result in a complex CFG and also may cause huge amount of PHI nodes. If we
+    // want to remove this limitation, we have to address
+    // https://github.com/llvm/llvm-project/issues/78578.
+    // if (true) {
+    //   bool HasIndirectbr = false;
+    //   if (!MBB.empty())
+    //     HasIndirectbr = MBB.back().isIndirectBranch();
+    //
+    //   errs() << "Match:" << MBB.getFullName() << " pred_size: " << MBB.pred_size() << "succ_size: " << MBB.succ_size() << "\n";
+    //   // errs() << "HasIndirectbr: " << HasIndirectbr << "\n";
+    //   // assert(HasIndirectbr && "HasIndirectbr");
+    //   bool HasPHI = false;
+    //   for (auto *SB : MBB.successors()) {
+    //     for (MachineInstr &MI : make_early_inc_range(SB->phis())) {
+    //       unsigned PHICount = (MI.getNumOperands() - 1) / 2;
+    //       if (PHICount > TailDupSuccSize) {
+    //         HasPHI = true;
+    //         errs() << "successor PHI: " << PHICount << "\n";
+    //         break;
+    //       } 
+    //       errs() << "successor PHI: " << PHICount << "\n";
+    //       for (MachineInstr &MI : make_early_inc_range(MBB.phis())) {
+    //         unsigned PHICount = (MI.getNumOperands() - 1) / 2;
+    //         if (PHICount > TailDupPredSize) {
+    //           HasPHI = true;
+    //           errs() << "PHI: " << PHICount << "\n";
+    //         }
+    //         break;
+    //       }
+    //     }
+    //     // if (HasPHI)
+    //     //   break;
+    //   }
+    //   // if (HasPHI)
+    //   //   continue;
+    // }
+    // errs() << "dup:" << MBB.getFullName()
+    errs() << "pred_size: " << MBB.pred_size() << " succ_size: " << MBB.succ_size();
+    for (MachineInstr &MI : make_early_inc_range(MBB.phis())) {
+      unsigned PHICount = (MI.getNumOperands() - 1) / 2;
+      errs() << " phi: " << PHICount;
+      break;
+    }
+    unsigned PHICount = 0;
+    for (auto *SB : MBB.successors()) {
+      for (MachineInstr &MI : make_early_inc_range(SB->phis())) {
+        PHICount = std::max((MI.getNumOperands() - 1) / 2, PHICount);
+        break;
+      }
+      // if (HasPHI)
+      //   break;
+    }
+    errs() << " successor max phi: " << PHICount;
+    errs() << "\n";
+
     MadeChange |= tailDuplicateAndUpdate(IsSimple, &MBB, nullptr);
   }
 
