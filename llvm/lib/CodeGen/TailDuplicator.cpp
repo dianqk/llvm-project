@@ -42,6 +42,7 @@
 #include <cassert>
 #include <iterator>
 #include <utility>
+#include <chrono>
 
 using namespace llvm;
 
@@ -279,10 +280,10 @@ bool TailDuplicator::tailDuplicateAndUpdate(
 bool TailDuplicator::tailDuplicateBlocks() {
   bool MadeChange = false;
 
-  if (PreRegAlloc && TailDupVerify) {
-    LLVM_DEBUG(dbgs() << "\n*** Before tail-duplicating\n");
-    VerifyPHIs(*MF, true);
-  }
+  // if (PreRegAlloc && TailDupVerify) {
+  //   LLVM_DEBUG(dbgs() << "\n*** Before tail-duplicating\n");
+  //   VerifyPHIs(*MF, true);
+  // }
 
   for (MachineBasicBlock &MBB :
        llvm::make_early_inc_range(llvm::drop_begin(*MF))) {
@@ -294,67 +295,39 @@ bool TailDuplicator::tailDuplicateBlocks() {
     if (!shouldTailDuplicate(IsSimple, MBB))
       continue;
 
-    // Duplicating a BB which has both multiple predecessors and successors will
-    // result in a complex CFG and also may cause huge amount of PHI nodes. If we
-    // want to remove this limitation, we have to address
-    // https://github.com/llvm/llvm-project/issues/78578.
-    // if (true) {
-    //   bool HasIndirectbr = false;
-    //   if (!MBB.empty())
-    //     HasIndirectbr = MBB.back().isIndirectBranch();
-    //
-    //   errs() << "Match:" << MBB.getFullName() << " pred_size: " << MBB.pred_size() << "succ_size: " << MBB.succ_size() << "\n";
-    //   // errs() << "HasIndirectbr: " << HasIndirectbr << "\n";
-    //   // assert(HasIndirectbr && "HasIndirectbr");
-    //   bool HasPHI = false;
-    //   for (auto *SB : MBB.successors()) {
-    //     for (MachineInstr &MI : make_early_inc_range(SB->phis())) {
-    //       unsigned PHICount = (MI.getNumOperands() - 1) / 2;
-    //       if (PHICount > TailDupSuccSize) {
-    //         HasPHI = true;
-    //         errs() << "successor PHI: " << PHICount << "\n";
-    //         break;
-    //       } 
-    //       errs() << "successor PHI: " << PHICount << "\n";
-    //       for (MachineInstr &MI : make_early_inc_range(MBB.phis())) {
-    //         unsigned PHICount = (MI.getNumOperands() - 1) / 2;
-    //         if (PHICount > TailDupPredSize) {
-    //           HasPHI = true;
-    //           errs() << "PHI: " << PHICount << "\n";
-    //         }
-    //         break;
-    //       }
-    //     }
-    //     // if (HasPHI)
-    //     //   break;
-    //   }
-    //   // if (HasPHI)
-    //   //   continue;
-    // }
-    // errs() << "dup:" << MBB.getFullName()
-    errs() << "pred_size: " << MBB.pred_size() << " succ_size: " << MBB.succ_size();
+    unsigned PredSize = MBB.pred_size();
+    unsigned SuccSize = MBB.succ_size();
+    unsigned PhiSize = 0;
     for (MachineInstr &MI : make_early_inc_range(MBB.phis())) {
-      unsigned PHICount = (MI.getNumOperands() - 1) / 2;
-      errs() << " phi: " << PHICount;
+      PhiSize = (MI.getNumOperands() - 1) / 2;
       break;
     }
-    unsigned PHICount = 0;
+    unsigned SuccPhiSize = 0;
     for (auto *SB : MBB.successors()) {
       for (MachineInstr &MI : make_early_inc_range(SB->phis())) {
-        PHICount = std::max((MI.getNumOperands() - 1) / 2, PHICount);
+        SuccPhiSize = std::max((MI.getNumOperands() - 1) / 2, SuccPhiSize);
         break;
       }
-      // if (HasPHI)
-      //   break;
     }
-    errs() << " successor max phi: " << PHICount;
-    errs() << "\n";
-
+    bool HasIndirectbr = false;
+    if (!MBB.empty())
+      HasIndirectbr = MBB.back().isIndirectBranch();
+    errs() << "isIndirectBranch: " << HasIndirectbr;
+    errs() << " PredSize: " << PredSize << " SuccSize: " << SuccSize << " PhiSize: " << PhiSize << " SuccPhiSize: " << SuccPhiSize;
+    auto Start = std::chrono::high_resolution_clock::now();
     MadeChange |= tailDuplicateAndUpdate(IsSimple, &MBB, nullptr);
+    auto End = std::chrono::high_resolution_clock::now();
+    auto Duration = std::chrono::duration_cast<std::chrono::seconds>(End - Start);
+    errs() << "\tTime: " << Duration.count() << "s\n";
+    // if (Duration.count() > 5) {
+    // errs() << "isIndirectBranch: " << HasIndirectbr;
+    // errs() << " PredSize: " << PredSize << " SuccSize: " << SuccSize << " PhiSize: " << PhiSize << " SuccPhiSize: " << SuccPhiSize << " Time: " << Duration.count() << "s\n";
+    // }
   }
+  errs() << "DONE\n";
 
-  if (PreRegAlloc && TailDupVerify)
-    VerifyPHIs(*MF, false);
+  // if (PreRegAlloc && TailDupVerify)
+  //   VerifyPHIs(*MF, false);
 
   return MadeChange;
 }
@@ -634,9 +607,9 @@ bool TailDuplicator::shouldTailDuplicate(bool IsSimple,
   // result in a complex CFG and also may cause huge amount of PHI nodes. If we
   // want to remove this limitation, we have to address
   // https://github.com/llvm/llvm-project/issues/78578.
-  if (TailBB.pred_size() > TailDupPredSize &&
-      TailBB.succ_size() > TailDupSuccSize)
-    return false;
+  // if (TailBB.pred_size() < TailDupPredSize &&
+  //     TailBB.succ_size() < TailDupSuccSize)
+  //   return false;
 
   // Set the limit on the cost to duplicate. When optimizing for size,
   // duplicate only one, because one branch instruction can be eliminated to

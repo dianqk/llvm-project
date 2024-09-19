@@ -95,8 +95,12 @@ bool TailDuplicateBase::runOnMachineFunction(MachineFunction &MF) {
                     /*LayoutMode=*/false);
 
   bool MadeChange = false;
+  auto Start = std::chrono::high_resolution_clock::now();
   while (Duplicator.tailDuplicateBlocks())
     MadeChange = true;
+  auto End = std::chrono::high_resolution_clock::now();
+  auto Duration = std::chrono::duration_cast<std::chrono::seconds>(End - Start);
+  errs() << "Total Duration Time: " << Duration.count() << "s\n";
 
   return MadeChange;
 }
