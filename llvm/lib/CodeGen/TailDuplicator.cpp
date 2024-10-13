@@ -280,10 +280,10 @@ bool TailDuplicator::tailDuplicateAndUpdate(
 bool TailDuplicator::tailDuplicateBlocks() {
   bool MadeChange = false;
 
-  // if (PreRegAlloc && TailDupVerify) {
-  //   LLVM_DEBUG(dbgs() << "\n*** Before tail-duplicating\n");
-  //   VerifyPHIs(*MF, true);
-  // }
+  if (PreRegAlloc && TailDupVerify) {
+    LLVM_DEBUG(dbgs() << "\n*** Before tail-duplicating\n");
+    VerifyPHIs(*MF, true);
+  }
 
   for (MachineBasicBlock &MBB :
        llvm::make_early_inc_range(llvm::drop_begin(*MF))) {
@@ -312,13 +312,32 @@ bool TailDuplicator::tailDuplicateBlocks() {
     bool HasIndirectbr = false;
     if (!MBB.empty())
       HasIndirectbr = MBB.back().isIndirectBranch();
-    errs() << "isIndirectBranch: " << HasIndirectbr;
-    errs() << " PredSize: " << PredSize << " SuccSize: " << SuccSize << " PhiSize: " << PhiSize << " SuccPhiSize: " << SuccPhiSize;
     auto Start = std::chrono::high_resolution_clock::now();
-    MadeChange |= tailDuplicateAndUpdate(IsSimple, &MBB, nullptr);
+    bool ThisMadeChange = tailDuplicateAndUpdate(IsSimple, &MBB, nullptr);
+    MadeChange |= ThisMadeChange;
     auto End = std::chrono::high_resolution_clock::now();
-    auto Duration = std::chrono::duration_cast<std::chrono::seconds>(End - Start);
-    errs() << "\tTime: " << Duration.count() << "s\n";
+    auto Duration = std::chrono::duration_cast<std::chrono::milliseconds>(End - Start);
+    if (ThisMadeChange && HasIndirectbr) {
+      // errs() << "isIndirectBranch: " << HasIndirectbr;
+      errs() << " PredSize: " << PredSize << " SuccSize: " << SuccSize << " PhiSize: " << PhiSize << " SuccPhiSize: " << SuccPhiSize;
+      errs() << " To: \n";
+      unsigned PredSize = MBB.pred_size();
+      unsigned SuccSize = MBB.succ_size();
+      unsigned PhiSize = 0;
+      for (MachineInstr &MI : make_early_inc_range(MBB.phis())) {
+        PhiSize = (MI.getNumOperands() - 1) / 2;
+        break;
+      }
+      unsigned SuccPhiSize = 0;
+      for (auto *SB : MBB.successors()) {
+        for (MachineInstr &MI : make_early_inc_range(SB->phis())) {
+          SuccPhiSize = std::max((MI.getNumOperands() - 1) / 2, SuccPhiSize);
+          break;
+        }
+      }
+      errs() << " PredSize: " << PredSize << " SuccSize: " << SuccSize << " PhiSize: " << PhiSize << " SuccPhiSize: " << SuccPhiSize;
+      errs() << "\tTime: " << Duration.count() << "ms\n\n";
+    }
     // if (Duration.count() > 5) {
     // errs() << "isIndirectBranch: " << HasIndirectbr;
     // errs() << " PredSize: " << PredSize << " SuccSize: " << SuccSize << " PhiSize: " << PhiSize << " SuccPhiSize: " << SuccPhiSize << " Time: " << Duration.count() << "s\n";
@@ -326,8 +345,8 @@ bool TailDuplicator::tailDuplicateBlocks() {
   }
   errs() << "DONE\n";
 
-  // if (PreRegAlloc && TailDupVerify)
-  //   VerifyPHIs(*MF, false);
+  if (PreRegAlloc && TailDupVerify)
+    VerifyPHIs(*MF, false);
 
   return MadeChange;
 }
