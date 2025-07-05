@@ -10,7 +10,6 @@
 //
 //===----------------------------------------------------------------------===//
 
-broken code
 #include "InstCombineInternal.h"
 #include "llvm/ADT/APFloat.h"
 #include "llvm/ADT/APInt.h"
