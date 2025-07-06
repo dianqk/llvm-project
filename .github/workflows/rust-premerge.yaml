@@ -61,8 +61,9 @@ jobs:
           echo "Running runtimes checks targets: ${runtimes_check_targets}"
           echo "Running runtimes checks requiring reconfiguring targets: ${runtimes_check_targets_needs_reconfig}"
 
+          find /usr/bin -name "clang*"
           export CC=/usr/bin/clang-18
-          export CXX=/usr/bin/clang-18++
+          export CXX=/usr/bin/clang++-18
 
           ./.ci/monolithic-linux.sh "${projects_to_build}" "${project_check_targets}" "${runtimes_to_build}" "${runtimes_check_targets}" "${runtimes_check_targets_needs_reconfig}"
       - name: Upload Artifacts
