@@ -145,7 +145,7 @@ jobs:
         uses: llvm/actions/install-ninja@main
       - name: Build and Test
         run: |
-          source <(git diff --name-only origin/${{ github.base_ref }}...${{ github.event.pull_request.head.ref }} | python .ci/compute_projects.py)
+          source <(git diff --name-only origin/${{ github.base_ref }}...${{ github.event.pull_request.head.sha }} | python .ci/compute_projects.py)
 
           if [[ "${projects_to_build}" == "" ]]; then
             echo "No projects to build"
