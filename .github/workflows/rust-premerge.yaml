@@ -63,9 +63,9 @@ jobs:
   premerge-checks-windows:
     name: Build and Test Windows
     if: >-
-        false && github.repository_owner == 'dianqk' &&
+        github.repository_owner == 'dianqk' &&
         (github.event_name != 'pull_request' || github.event.action != 'closed')
-    runs-on: llvm-premerge-windows-runners
+    runs-on: windows-2022
     defaults:
       run:
         shell: bash
@@ -82,11 +82,8 @@ jobs:
       - name: Compute Projects
         id: vars
         run: |
-          source <(git diff --name-only ${{ github.base_ref }}...HEAD | python .ci/compute_projects.py)
-
-          if [[ "${projects_to_build}" == "" ]]; then
-            echo "No projects to build"
-          fi
+          projects_to_build='llvm'
+          project_check_targets='check-llvm'
 
           echo "Building projects: ${projects_to_build}"
           echo "Running project checks targets: ${project_check_targets}"
