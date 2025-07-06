@@ -141,6 +141,7 @@ jobs:
         uses: llvm/actions/install-ninja@main
       - name: Build and Test
         run: |
+          git fetch origin ${{ github.base_ref }}:${{ github.base_ref }}
           source <(git diff --name-only ${{ github.base_ref }}...HEAD | python .ci/compute_projects.py)
 
           if [[ "${projects_to_build}" == "" ]]; then
