@@ -43,10 +43,9 @@ jobs:
         # not get notified while the new premerge pipeline is in an
         # experimental state.
         run: |
-          which clang-18
           git config --global --add safe.directory '*'
-
-          source <(git diff --name-only ${{ github.base_ref }}...HEAD | python .ci/compute_projects.py)
+          git diff --name-only origin/${{ github.base_ref }}...${{ github.event.pull_request.head.sha }}
+          source <(git diff --name-only origin/${{ github.base_ref }}...${{ github.event.pull_request.head.sha }} | python .ci/compute_projects.py)
 
           if [[ "${projects_to_build}" == "" ]]; then
             echo "No projects to build"
@@ -59,8 +58,8 @@ jobs:
           echo "Running runtimes checks targets: ${runtimes_check_targets}"
           echo "Running runtimes checks requiring reconfiguring targets: ${runtimes_check_targets_needs_reconfig}"
 
-          export CC=/opt/llvm/bin/clang
-          export CXX=/opt/llvm/bin/clang++
+          export CC=/usr/bin/clang-18
+          export CXX=/usr/bin/clang-18++
 
           ./.ci/monolithic-linux.sh "${projects_to_build}" "${project_check_targets}" "${runtimes_to_build}" "${runtimes_check_targets}" "${runtimes_check_targets_needs_reconfig}"
       - name: Upload Artifacts
