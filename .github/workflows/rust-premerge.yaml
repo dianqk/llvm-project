@@ -26,7 +26,7 @@ jobs:
   premerge-checks-linux:
     name: Build and Test Linux
     if: >-
-        github.repository_owner == 'rust-lang' &&
+        github.repository_owner == 'dianqk' &&
         (github.event_name != 'pull_request' || github.event.action != 'closed')
     runs-on: ubuntu-24.04
     steps:
@@ -68,7 +68,7 @@ jobs:
     name: Build and Test macOS
     runs-on: macos-14
     if: >-
-      github.repository_owner == 'rust-lang' &&
+      github.repository_owner == 'dianqk' &&
       (github.event_name != 'pull_request' || github.event.action != 'closed')
     steps:
       - name: Checkout LLVM
