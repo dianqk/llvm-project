@@ -168,7 +168,7 @@ bool MCAsmParser::parseSymbol(MCSymbol *&Res) {
   if (parseIdentifier(Name))
     return true;
 
-  Res = getContext().parseSymbol(Name);
+  Res = getContext().getOrCreateSymbol(Name);
   return false;
 }
 

@@ -164,7 +164,7 @@ bool ELFAsmParser::parseDirectiveSymbolAttribute(StringRef Directive, SMLoc) {
         continue;
       }
 
-      MCSymbol *Sym = getContext().parseSymbol(Name);
+      MCSymbol *Sym = getContext().getOrCreateSymbol(Name);
 
       getStreamer().emitSymbolAttribute(Sym, Attr);
 
