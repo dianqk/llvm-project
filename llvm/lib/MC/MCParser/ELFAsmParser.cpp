@@ -197,9 +197,10 @@ bool ELFAsmParser::parseSectionSwitch(StringRef Section, unsigned Type,
 }
 
 bool ELFAsmParser::parseDirectiveSize(StringRef, SMLoc) {
-  MCSymbol *Sym;
-  if (getParser().parseSymbol(Sym))
+  StringRef Name;
+  if (getParser().parseIdentifier(Name))
     return TokError("expected identifier");
+  MCSymbolELF *Sym = cast<MCSymbolELF>(getContext().getOrCreateSymbol(Name));
 
   if (getLexer().isNot(AsmToken::Comma))
     return TokError("expected comma");
@@ -710,9 +711,12 @@ static MCSymbolAttr MCAttrForString(StringRef Type) {
 ///  ::= .type identifier , %attribute
 ///  ::= .type identifier , "attribute"
 bool ELFAsmParser::parseDirectiveType(StringRef, SMLoc) {
-  MCSymbol *Sym;
-  if (getParser().parseSymbol(Sym))
+  StringRef Name;
+  if (getParser().parseIdentifier(Name))
     return TokError("expected identifier");
+
+  // Handle the identifier as the key symbol.
+  MCSymbol *Sym = getContext().getOrCreateSymbol(Name);
 
   bool AllowAt = getLexer().getAllowAtInIdentifier();
   if (!AllowAt &&
@@ -785,9 +789,8 @@ bool ELFAsmParser::parseDirectiveIdent(StringRef, SMLoc) {
 /// parseDirectiveSymver
 ///  ::= .symver foo, bar2@zed
 bool ELFAsmParser::parseDirectiveSymver(StringRef, SMLoc) {
-  MCSymbol *OriginalSym;
-  StringRef Name, Action;
-  if (getParser().parseSymbol(OriginalSym))
+  StringRef OriginalName, Name, Action;
+  if (getParser().parseIdentifier(OriginalName))
     return TokError("expected identifier");
 
   if (getLexer().isNot(AsmToken::Comma))
@@ -815,7 +818,8 @@ bool ELFAsmParser::parseDirectiveSymver(StringRef, SMLoc) {
   }
   (void)parseOptionalToken(AsmToken::EndOfStatement);
 
-  getStreamer().emitELFSymverDirective(OriginalSym, Name, KeepOriginalSym);
+  getStreamer().emitELFSymverDirective(
+      getContext().getOrCreateSymbol(OriginalName), Name, KeepOriginalSym);
   return false;
 }
 
@@ -848,8 +852,8 @@ bool ELFAsmParser::parseDirectiveVersion(StringRef, SMLoc) {
 bool ELFAsmParser::parseDirectiveWeakref(StringRef, SMLoc) {
   // FIXME: Share code with the other alias building directives.
 
-  MCSymbol *Alias;
-  if (getParser().parseSymbol(Alias))
+  StringRef AliasName;
+  if (getParser().parseIdentifier(AliasName))
     return TokError("expected identifier");
 
   if (getLexer().isNot(AsmToken::Comma))
@@ -857,9 +861,13 @@ bool ELFAsmParser::parseDirectiveWeakref(StringRef, SMLoc) {
 
   Lex();
 
-  MCSymbol *Sym;
-  if (getParser().parseSymbol(Sym))
+  StringRef Name;
+  if (getParser().parseIdentifier(Name))
     return TokError("expected identifier");
+
+  MCSymbol *Alias = getContext().getOrCreateSymbol(AliasName);
+
+  MCSymbol *Sym = getContext().getOrCreateSymbol(Name);
 
   getStreamer().emitWeakReference(Alias, Sym);
   return false;

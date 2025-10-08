@@ -213,9 +213,10 @@ public:
   // TODO: This function is almost the same as ELFAsmParser::ParseDirectiveSize
   // so maybe could be shared somehow.
   bool parseDirectiveSize(StringRef, SMLoc Loc) {
-    MCSymbol *Sym;
-    if (Parser->parseSymbol(Sym))
+    StringRef Name;
+    if (Parser->parseIdentifier(Name))
       return TokError("expected identifier in directive");
+    auto Sym = getContext().getOrCreateSymbol(Name);
     if (expect(AsmToken::Comma, ","))
       return true;
     const MCExpr *Expr;
@@ -293,9 +294,10 @@ public:
     assert(Attr != MCSA_Invalid && "unexpected symbol attribute directive!");
     if (getLexer().isNot(AsmToken::EndOfStatement)) {
       while (true) {
-        MCSymbol *Sym;
-        if (getParser().parseSymbol(Sym))
+        StringRef Name;
+        if (getParser().parseIdentifier(Name))
           return TokError("expected identifier in directive");
+        MCSymbol *Sym = getContext().getOrCreateSymbol(Name);
         getStreamer().emitSymbolAttribute(Sym, Attr);
         if (getLexer().is(AsmToken::EndOfStatement))
           break;
