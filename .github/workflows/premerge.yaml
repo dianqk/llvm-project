@@ -132,7 +132,6 @@ jobs:
     name: MacOS Premerge Checks
     runs-on: macos-14
     if: >-
-      github.repository_owner == 'llvm' &&
       (startswith(github.ref_name, 'release/') ||
        startswith(github.base_ref, 'release/')) &&
       (github.event_name != 'pull_request' || github.event.action != 'closed')
@@ -149,7 +148,10 @@ jobs:
         uses: llvm/actions/install-ninja@main
       - name: Build and Test
         run: |
+          git diff --name-only HEAD~1...HEAD
+          git diff --name-only HEAD~1...HEAD | python3 .ci/compute_projects.py
           source <(git diff --name-only HEAD~1...HEAD | python3 .ci/compute_projects.py)
+          env
 
           if [[ "${projects_to_build}" == "" ]]; then
             echo "No projects to build"
