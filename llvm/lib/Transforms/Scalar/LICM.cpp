@@ -147,7 +147,7 @@ static cl::opt<unsigned> IntAssociationUpperLimit(
         "during a single round of hoisting the reassociated expressions."));
 
 static cl::opt<bool>
-    AllowSpeculationOpt("licm-allow-speculation", cl::Hidden, cl::init(true),
+    AllowSpeculationOpt("licm-allow-speculation", cl::Hidden, cl::init(false),
                         cl::desc("Allow speculation in LICM pass"));
 
 // Experimental option to allow imprecision in LICM in pathological cases, in
