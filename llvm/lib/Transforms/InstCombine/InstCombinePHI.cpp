@@ -1402,13 +1402,8 @@ static Value *foldDependentIVs(PHINode &PN, IRBuilderBase &Builder) {
 // PHINode simplification
 //
 Instruction *InstCombinerImpl::visitPHINode(PHINode &PN) {
-  SmallVector<Value *, 8> Ops(PN.operands());
-
-  if (auto Result = simplifyPHINode(&PN, Ops, SQ.getWithInstruction(&PN))) {
-    if (Result.NeedFreeze)
-      return new FreezeInst(Result.V);
-    return replaceInstUsesWith(PN, Result.V);
-  }
+  if (Value *V = simplifyInstruction(&PN, SQ.getWithInstruction(&PN)))
+    return replaceInstUsesWith(PN, V);
 
   if (Instruction *Result = foldPHIArgZextsIntoPHI(PN))
     return Result;

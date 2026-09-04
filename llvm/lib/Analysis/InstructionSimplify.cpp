@@ -5583,9 +5583,8 @@ Value *llvm::simplifyExtractElementInst(Value *Vec, Value *Idx,
 }
 
 /// See if we can fold the given phi. If not, returns null.
-PHISimplifyResult llvm::simplifyPHINode(PHINode *PN,
-                                        ArrayRef<Value *> IncomingValues,
-                                        const SimplifyQuery &Q) {
+static Value *simplifyPHINode(PHINode *PN, ArrayRef<Value *> IncomingValues,
+                              const SimplifyQuery &Q) {
   // WARNING: no matter how worthwhile it may seem, we can not perform PHI CSE
   //          here, because the PHI we may succeed simplifying to was not
   //          def-reachable from the original PHI!
@@ -5609,32 +5608,31 @@ PHISimplifyResult llvm::simplifyPHINode(PHINode *PN,
       continue;
     }
     if (CommonValue && Incoming != CommonValue)
-      return {}; // Not the same, bail out.
+      return nullptr; // Not the same, bail out.
     CommonValue = Incoming;
   }
 
   // If CommonValue is null then all of the incoming values were either undef,
   // poison or equal to the phi node itself.
   if (!CommonValue)
-    return {HasUndefInput ? UndefValue::get(PN->getType())
-                          : PoisonValue::get(PN->getType()),
-            /*NeedFreeze=*/false};
+    return HasUndefInput ? UndefValue::get(PN->getType())
+                         : PoisonValue::get(PN->getType());
 
   if (HasPoisonInput || HasUndefInput) {
     // If we have a PHI node like phi(X, undef, X), where X is defined by some
     // instruction, we cannot return X as the result of the PHI node unless it
     // dominates the PHI block.
     if (!valueDominatesPHI(CommonValue, PN, Q.DT))
-      return {};
+      return nullptr;
 
     // Make sure we do not replace an undef value with poison.
     if (HasUndefInput &&
         !isGuaranteedNotToBePoison(CommonValue, Q.AC, Q.CxtI, Q.DT))
-      return {CommonValue, /*NeedFreeze=*/true};
-    return {CommonValue, /*NeedFreeze=*/false};
+      return nullptr;
+    return CommonValue;
   }
 
-  return {CommonValue, /*NeedFreeze=*/false};
+  return CommonValue;
 }
 
 static Value *simplifyCastInst(unsigned CastOpc, Value *Op, Type *Ty,
@@ -7795,10 +7793,8 @@ static Value *simplifyInstructionWithOperands(Instruction *I,
                                      SVI->getShuffleMask(), SVI->getType(), Q,
                                      MaxRecurse);
   }
-  case Instruction::PHI: {
-    auto Result = simplifyPHINode(cast<PHINode>(I), NewOps, Q);
-    return Result.NeedFreeze ? nullptr : Result.V;
-  }
+  case Instruction::PHI:
+    return simplifyPHINode(cast<PHINode>(I), NewOps, Q);
   case Instruction::Call:
     return simplifyCall(
         cast<CallInst>(I), NewOps.back(),

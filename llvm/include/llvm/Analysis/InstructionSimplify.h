@@ -190,17 +190,6 @@ LLVM_ABI Value *simplifyExtractValueInst(Value *Agg, ArrayRef<unsigned> Idxs,
 LLVM_ABI Value *simplifyExtractElementInst(Value *Vec, Value *Idx,
                                            const SimplifyQuery &Q);
 
-struct PHISimplifyResult {
-  Value *V = nullptr;
-  bool NeedFreeze = false;
-
-  explicit operator bool() const { return V != nullptr; }
-};
-
-LLVM_ABI PHISimplifyResult simplifyPHINode(PHINode *PN,
-                                           ArrayRef<Value *> IncomingValues,
-                                           const SimplifyQuery &Q);
-
 /// Given operands for a CastInst, fold the result or return null.
 LLVM_ABI Value *simplifyCastInst(unsigned CastOpc, Value *Op, Type *Ty,
                                  const SimplifyQuery &Q);
