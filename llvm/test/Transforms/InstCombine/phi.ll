@@ -93,10 +93,9 @@ define i32 @test5_undef(i32 %A, i1 %cond) {
 ; CHECK-NEXT:  BB0:
 ; CHECK-NEXT:    br label [[LOOP:%.*]]
 ; CHECK:       Loop:
-; CHECK-NEXT:    [[B:%.*]] = phi i32 [ [[A:%.*]], [[BB0:%.*]] ], [ undef, [[LOOP]] ]
 ; CHECK-NEXT:    br i1 [[COND:%.*]], label [[LOOP]], label [[EXIT:%.*]]
 ; CHECK:       Exit:
-; CHECK-NEXT:    ret i32 [[B]]
+; CHECK-NEXT:    ret i32 [[A:%.*]]
 ;
 BB0:
   br label %Loop
